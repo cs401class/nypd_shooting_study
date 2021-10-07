@@ -1,0 +1,33 @@
+---
+title: "NYPD Shooting Incident Study"
+author: "Hao Do"
+date: "10/2/2021"
+output:
+  html_document: 
+    fig_width: 11
+    fig_height: 8.5
+  pdf_document:
+    fig_width: 11
+    fig_height: 8.5
+  word_document:
+    fig_width: 11
+    fig_height: 8.5
+editor_options:
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+urls <- ("https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD")
+police_data <- read.csv(urls[1])
+police_data <- police_data %>% select(-c(JURISDICTION_CODE,PRECINCT,X_COORD_CD,Y_COORD_CD,Latitude,Longitude,Lon_Lat
+                                         ,LOCATION_DESC,STATISTICAL_MURDER_FLAG,INCIDENT_KEY,BORO,PERP_SEX,OCCUR_TIME,VIC_SEX))
+
+ggplot(police_data, aes(x = PERP_RACE)) + geom_bar() + labs(x = "Perpetrator Race",y = "Perpetrator Count") + scale_x_discrete(labels=c("AMERICAN INDIAN/ALASKAN NATIVE" = "AI/AN","BLACK HISPANIC" = "BH", "WHITE HISPANIC" = "WH","ASIAN / PACIFIC ISLANDER" = "API"))+labs(caption = "(Note: AI/AN: AMERICAN INDIAN/ALASKAN NATIVE; API: ASIAN/PACIFIC ISLANDER; BH: BLACK HISPANIC; WH: WHITE HISPANIC)")
+ggplot(police_data, aes(x = VIC_RACE)) + geom_bar() +labs(x = "Victim Race", y = "Victim Count") + scale_x_discrete(labels=c("AMERICAN INDIAN/ALASKAN NATIVE" = "AI/AN","BLACK HISPANIC" = "BH", "WHITE HISPANIC" = "WH","ASIAN / PACIFIC ISLANDER" = "API"))+labs(caption = "(Note: AI/AN: AMERICAN INDIAN/ALASKAN NATIVE; API: ASIAN/PACIFIC ISLANDER; BH: BLACK HISPANIC; WH: WHITE HISPANIC)")
+ggplot(police_data, aes(x = PERP_AGE_GROUP)) + geom_bar() + labs(x = "Perpetrator Age Group",y = "Perpetrator Age Group Count")
+ggplot(police_data, aes(x = VIC_AGE_GROUP)) + geom_bar() +labs(x = "Victim Age Group",y = "Victim Age Group Count")
+```
+

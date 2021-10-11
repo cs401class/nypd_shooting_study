@@ -1,0 +1,141 @@
+---
+title: "Covid19Study2 Un-Vacine for Red-state Deaths compare to blue-states deaths"
+author: "Hao Do"
+date: "10/10/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+
+## Getting dataset from John Hopkin University on Github
+
+url_in <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+
+files_names <- c("time_series_covid19_confirmed_US.csv" ,
+                 "time_series_covid19_deaths_US.csv" ,
+                 "time_series_covid19_confirmed_global.csv" ,
+                 "time_series_covid19_deaths_global.csv")
+
+urls <- str_c(url_in,files_names)
+
+US_cases <- read_csv(urls[1])
+US_deaths <- read_csv(urls[2])
+global_cases <- read_csv(urls[3])
+global_deaths <- read_csv(urls[4])
+
+## Cleaning up the data
+
+global_cases <- global_cases %>%
+ pivot_longer(cols = -c('Province/State','Country/Region',Lat,Long),
+               names_to = "date",
+              values_to = "cases") %>%
+  select(-c(Lat,Long))
+
+global_deaths <- global_deaths %>%
+ pivot_longer(cols = -c('Province/State','Country/Region',Lat,Long),
+               names_to = "date",
+              values_to = "deaths") %>%
+  select(-c(Lat,Long))
+
+global <- global_cases %>%
+  full_join(global_deaths) %>%
+  rename(Country_Region ='Country/Region',
+          Province_State = 'Province/State') %>%
+  mutate(date = mdy(date))
+
+global <- global %>% filter(cases >0)
+
+
+US_cases <- US_cases %>%
+ pivot_longer(cols = -(UID:Combined_Key),
+              names_to = "date",
+              values_to = "cases") %>%
+  select(Admin2:cases) %>%
+  mutate(date = mdy(date)) %>%
+  select(-c(Lat,Long_))
+
+US_deaths <- US_deaths %>%
+  pivot_longer(cols = -(UID:Population),
+               names_to = "date",
+               values_to = "deaths") %>%
+  select(Admin2:deaths) %>%
+  mutate(date = mdy(date)) %>%
+  select(-c(Lat,Long_))
+
+US <- US_cases %>%
+  full_join(US_deaths)
+
+global <- global %>%
+  unite("Combined_Key",
+        c(Province_State, Country_Region),
+        sep = ", ",
+        na.rm = TRUE,
+        remove = FALSE)
+
+## Get the Population
+
+uid_lookup_url <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv"
+uid <- read_csv(uid_lookup_url) %>%
+  select(-c(Lat, Long_, Combined_Key, code3, iso2,iso3, Admin2))
+
+#Cleaning up the data
+
+global <- global %>%
+  left_join(uid, by = c("Province_State", "Country_Region")) %>%
+  select(-c(UID, FIPS)) %>%
+  select(Province_State, Country_Region, date, cases,deaths,Population,Combined_Key)
+
+US_by_state <- US %>%
+  filter(date >= as.Date("2021-07-01")) %>%
+  group_by(Province_State, Country_Region, date)
+
+state_total <- US_by_state %>%
+  group_by(Province_State, date) %>%
+  summarise(cases = sum(cases), deaths = sum(deaths), Population = sum(Population)) %>%
+  mutate(deaths_per_population = 1000 * deaths / Population)
+
+# Analize the Deaths per population between Red states and Blue States 
+red_state1 <- "Texas"
+state_total %>%
+filter(Province_State == red_state1) %>%
+ggplot(aes(x=date , y = deaths_per_population))+
+geom_line(aes(color = "Red State: Texas"))
+
+blue_state1 <- "California"
+state_total %>%
+  filter(Province_State == blue_state1) %>%
+  ggplot(aes(x= date, y = deaths_per_population))+
+  geom_line(aes(color = "Blue State: California"))
+
+red_state2 <- "Louisiana"
+state_total %>%
+filter(Province_State == red_state2) %>%
+ggplot(aes(x=date , y = deaths_per_population))+
+geom_line(aes(color = "Red State: Louisiana"))
+
+blue_state2 <- "Oregon"
+state_total %>%
+  filter(Province_State == blue_state2) %>%
+  ggplot(aes(x= date, y = deaths_per_population))+
+  geom_line(aes(color = "Blue State: Oregon"))
+
+red_state3 <- "Mississippi"
+state_total %>%
+filter(Province_State == red_state3) %>%
+ggplot(aes(x=date , y = deaths_per_population))+
+geom_line(aes(color = "Red State: Mississippi"))
+
+blue_state3 <- "Washington"
+state_total %>%
+  filter(Province_State == blue_state3) %>%
+  ggplot(aes(x= date, y = deaths_per_population))+
+  geom_line(aes(color = "Blue State: Washington"))
+
+  
+```
+
+
